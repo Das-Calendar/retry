@@ -1,0 +1,13 @@
+{
+    "name": "das/backoff",
+    "description": "PHP library providing retry functionality with multiple backoff strategies and jitter support",
+    "require": {},
+    "require-dev": {
+        "phpunit/phpunit": "^9"
+    },
+    "autoload": {
+        "psr-4":{
+            "DAS\\Retry\\": "src"
+        }
+    }
+}
