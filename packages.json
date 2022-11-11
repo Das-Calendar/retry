@@ -1,0 +1,26 @@
+{
+    "packages": {
+        "das/retry": {
+            "dev-master": {
+                "name": "das/backoff",
+                "source": {
+                    "reference": "6417314a6eebb7f22edb1927a641e5a2154962c0",
+                    "type": "git",
+                    "url": "git@github.com:Das-Calendar/retry.git"
+                },
+                "type": "project",
+                "version":"dev-master"
+             },
+            "v1.0.0": { 
+                "name": "das/backoff",
+                "source": {
+                    "reference": "6417314a6eebb7f22edb1927a641e5a2154962c0",
+                    "type": "git",
+                    "url": "git@github.com:Das-Calendar/retry.git"
+                },
+                "type": "project",
+                "version":"v1.0.0"
+            }
+        }
+    }
+}
