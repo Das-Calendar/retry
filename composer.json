@@ -1,5 +1,5 @@
 {
-    "name": "das/rerty",
+    "name": "das/retry",
     "description": "PHP library providing retry functionality with multiple backoff strategies and jitter support",
     "version":"v1.0.0",
     "require": {},
