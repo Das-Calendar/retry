@@ -1,5 +1,6 @@
 # PHP Retry
 
+Based on [https://github.com/stechstudio/backoff]
 
 Easily wrap your code with retry functionality. This library provides:
 
@@ -18,10 +19,14 @@ By default the backoff is quadratic with a 100ms base time (`attempt^2 * 100`), 
 
 ## Retry class usage
 
-The Retry class constructor parameters are `$maxAttempts`, `$strategy`, `$waitCap`, `$useJitter`.
+The Retry class work as builder and have available the nex method `setMaxAttempts`, `setStrategy`, `setWaitCap`, `enableJitter`.
 
 ```php
-$retry = new Retry(10, 'exponential', 10000, true);
+$retry = new Retry();
+$retry->setMaxAttempts(10)
+->setStrategy(new ExponentialStrategy(100))
+->setWaitCap(10000)
+->enableJitter();
 $result = $retry->run(function() {
     return doSomeWorkThatMightFail();
 });
@@ -39,18 +44,6 @@ $result = $retry
         return doSomeWorkThatMightFail();
     });
 ```
-
-## Changing defaults
-
-If you find you want different defaults, you can modify them via static class properties:
-
-```php
-Retry::$defaultMaxAttempts = 10;
-Retry::$defaultStrategy = 'exponential';
-Retry::$defaultJitterEnabled = true;
-```
-
-You might want to do this somewhere in your application bootstrap for example. These defaults will be used anytime you create an instance of the Retry class or use the `backoff()` helper function.
 
 ## Strategies
 
@@ -97,7 +90,9 @@ This strategy will sleep for `(2^attempt) * baseTime`.
 In our earlier code examples we specified the strategy as a string:
 
 ```php
-$retry = new Retry(10, 'constant');
+$retry = new Retry();
+$retry->setStrategy(new ConstantStrategy(100));
+$retry->setMaxAttempts(10);
 ```
 
 This would use the `ConstantStrategy` with defaults, effectively giving you a 100 millisecond sleep time.
@@ -105,22 +100,25 @@ This would use the `ConstantStrategy` with defaults, effectively giving you a 10
 You can create the strategy instance yourself in order to modify these defaults:
 
 ```php
-$retry = new Retry(10, new LinearStrategy(500));
+$retry = new Retry();
+$retry->setStrategy(new LinearStrategy(500));
+$retry->setMaxAttempts(10)
+
 ```
 
-You can also pass in an integer as the strategy, will translates to a ConstantStrategy with the integer as the base time in milliseconds:
+Finally, you can use static constructors to speed things up
 
 ```php
-$retry = new Retry(10, 1000);
-```
 
-Finally, you can pass in a closure as the strategy if you wish. This closure should receive an integer `attempt` and return a sleep time in milliseconds.
+$retry = new Retry::Default();
 
-```php
-$retry = new Retry(10);
-$retry->setStrategy(function($attempt) {
-    return (100 * $attempt) + 5000;
-});
+$retry = new Retry::ConstantStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null);
+
+$retry = new Retry::LinearStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null);
+
+$retry = new Retry::PolynomialStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null);
+
+$retry = new Retry::ExponentialStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null);
 ```
 
 ## Wait cap
