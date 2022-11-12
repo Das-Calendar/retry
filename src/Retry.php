@@ -1,118 +1,73 @@
 <?php
 namespace DAS\Retry;
 
-use DAS\Retry\Strategies\AbstractStrategy;
 use DAS\Retry\Strategies\ConstantStrategy;
 use DAS\Retry\Strategies\ExponentialStrategy;
+use DAS\Retry\Strategies\IStrategy;
 use DAS\Retry\Strategies\LinearStrategy;
 use DAS\Retry\Strategies\PolynomialStrategy;
 use Exception;
-use InvalidArgumentException;
 
-/**
- * Class Retry
- * @package DAS\Retry
- */
 class Retry
 {
-    /**
-     * @var string
-     */
-    public static $defaultStrategy = "polynomial";
 
-    /**
-     * @var int
-     */
-    public static $defaultMaxAttempts = 5;
+    private const DefaultMaxAttempts = 5;
+    private const DefaultJitterEnabled = false;
 
-    /**
-     * @var bool
-     */
-    public static $defaultJitterEnabled = false;
+    protected IStrategy $strategy;
 
-    /**
-     * This callable should take an 'attempt' integer, and return a wait time in milliseconds
-     *
-     * @var callable
-     */
-    protected $strategy;
-
-    /**
-     * @var array
-     */
-    protected $strategies = [
-        'constant'    => ConstantStrategy::class,
-        'linear'      => LinearStrategy::class,
-        'polynomial'  => PolynomialStrategy::class,
-        'exponential' => ExponentialStrategy::class
-    ];
-
-    /**
-     * @var int
-     */
-    protected $maxAttempts;
-
-    /**
-     * The max wait time you want to allow, regardless of what the strategy says
-     *
-     * @var int     In milliseconds
-     */
-    protected $waitCap = null;
-
-    /**
-     * @var bool
-     */
-    protected $useJitter = false;
-
-    /**
-     * @var array
-     */
-    protected $exceptions = [];
-
-    /**
-     * This will decide whether to retry or not.
-     * @var callable
-     */
-    protected $decider;
-
-    /**
-     * This receive any exceptions we encounter.
-     * @var callable
-     */
-    protected $errorHandler;
-
-    /**
-     * @param int $maxAttempts
-     * @param mixed $strategy
-     * @param int $waitCap
-     * @param bool $useJitter
-     * @param callable $decider
-     */
-    public function __construct(
-        int $maxAttempts = null,
-        mixed $strategy = null,
-        int $waitCap = null,
-        bool $useJitter = null,
-        callable $decider = null
-    ) {
-        $this->setMaxAttempts($maxAttempts ?: self::$defaultMaxAttempts);
-        $this->setStrategy($strategy ?: self::$defaultStrategy);
-        $this->setJitter($useJitter ?: self::$defaultJitterEnabled);
-        $this->setWaitCap($waitCap);
-        $this->setDecider($decider ?: $this->getDefaultDecider());
-    }
+    protected int $maxAttempts;
+    protected ?int $waitCap = null;
+    protected bool $useJitter = false;
+    protected array $exceptions = [];
+    protected $decider = null;
+    protected $errorHandler = null;
 
     public static function Default(): self{
-        return new self(5, new PolynomialStrategy(), 0, false);
+        $iRetry = new self();
+        $iRetry->setMaxAttempts(self::DefaultMaxAttempts);
+        $iRetry->setStrategy(new PolynomialStrategy());
+        $iRetry->setJitter(self::DefaultJitterEnabled);
+        $iRetry->setDecider($iRetry->getDefaultDecider());
+        return $iRetry;
     }
 
-    public static function Constant(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null): self{
-        return new self($maxAttempt, 'constant', null, true);
+    public static function ConstantStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null): self{
+        $iRetry = new self();
+        $iRetry->setMaxAttempts(self::DefaultMaxAttempts);
+        $iRetry->setStrategy(new ConstantStrategy());
+        $iRetry->setJitter(self::DefaultMaxAttempts);
+        $iRetry->setDecider($iRetry->getDefaultDecider());
+        return $iRetry;
     }
 
-    /**
-     * @param integer $attempts
-     */
+    public static function LinearStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null): self{
+        $iRetry = new self();
+        $iRetry->setMaxAttempts(self::DefaultMaxAttempts);
+        $iRetry->setStrategy(new LinearStrategy());
+        $iRetry->setJitter(self::DefaultMaxAttempts);
+        $iRetry->setDecider($iRetry->getDefaultDecider());
+        return $iRetry;
+    }
+
+    public static function PolynomialStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null): self{
+        $iRetry = new self();
+        $iRetry->setMaxAttempts(self::DefaultMaxAttempts);
+        $iRetry->setStrategy(new PolynomialStrategy());
+        $iRetry->setJitter(self::DefaultMaxAttempts);
+        $iRetry->setDecider($iRetry->getDefaultDecider());
+        return $iRetry;
+    }
+
+    public static function ExponentialStrategy(int $maxAttempt, int $waitCap = null, bool $useJitter = null, callable $decider = null): self{
+        $iRetry = new self();
+        $iRetry->setMaxAttempts(self::DefaultMaxAttempts);
+        $iRetry->setStrategy(new ExponentialStrategy());
+        $iRetry->setJitter(self::DefaultMaxAttempts);
+        $iRetry->setDecider($iRetry->getDefaultDecider());
+        return $iRetry;
+    }
+
     public function setMaxAttempts(int $attempts): self
     {
         $this->maxAttempts = $attempts;
@@ -120,19 +75,11 @@ class Retry
          return $this;
     }
 
-    /**
-     * @return integer
-     */
     public function getMaxAttempts(): int
     {
         return $this->maxAttempts;
     }
 
-    /**
-     * @param int|null $cap
-     *
-     * @return $this
-     */
     public function setWaitCap(?int $cap)
     {
         $this->waitCap = $cap;
@@ -140,19 +87,11 @@ class Retry
         return $this;
     }
 
-    /**
-     * @return int|null
-     */
     public function getWaitCap(): int|null
     {
         return $this->waitCap;
     }
 
-    /**
-     * @param bool $useJitter
-     *
-     * @return $this
-     */
     public function setJitter(bool $useJitter): self
     {
         $this->useJitter = $useJitter;
@@ -160,9 +99,6 @@ class Retry
         return $this;
     }
 
-    /**
-     *
-     */
     public function enableJitter(): self
     {
         $this->setJitter(true);
@@ -170,9 +106,6 @@ class Retry
         return $this;
     }
 
-    /**
-     *
-     */
     public function disableJitter(): self
     {
         $this->setJitter(false);
@@ -185,58 +118,18 @@ class Retry
         return $this->useJitter;
     }
 
-    /**
-     * @return callable
-     */
     public function getStrategy(): callable
     {
         return $this->strategy;
     }
 
-    /**
-     * @param mixed $strategy
-     *
-     * @return $this
-     */
-    public function setStrategy($strategy): self
+    public function setStrategy(IStrategy $strategy): self
     {
-        $this->strategy = $this->buildStrategy($strategy);
+        $this->strategy = $strategy;
 
         return $this;
     }
 
-    /**
-     * Builds a callable strategy.
-     *
-     * @param mixed $strategy   Can be a string that matches a key in $strategies, an instance of AbstractStrategy
-     *                          (or any other instance that has an __invoke method), a callback function, or
-     *                          an integer (which we interpret to mean you want a ConstantStrategy)
-     *
-     * @return callable
-     */
-    protected function buildStrategy(int|string|callable|AbstractStrategy $strategy): callable
-    {
-        if (is_string($strategy) && array_key_exists($strategy, $this->strategies)) {
-            return new $this->strategies[$strategy];
-        }
-
-        if (is_callable($strategy)) {
-            return $strategy;
-        }
-
-        if (is_int($strategy)) {
-            return new ConstantStrategy($strategy);
-        }
-
-        throw new InvalidArgumentException("Invalid strategy: " . $strategy);
-    }
-
-    /**
-     * @param callable $callback
-     *
-     * @return mixed
-     * @throws Exception
-     */
     public function run(callable $callback): mixed
     {
         $attempt = 0;
@@ -260,7 +153,7 @@ class Retry
                 $this->exceptions[] = $e;
                 $exception = $e;
             }
-            $try = call_user_func($this->decider, ++$attempt, $this->getMaxAttempts(), $result, $exception);
+            $try = call_user_func($this->decider(), ++$attempt, $this->getMaxAttempts(), $result, $exception);
 
             if($try && isset($this->errorHandler)) {
                 call_user_func($this->errorHandler, $exception, $attempt, $this->getMaxAttempts());
@@ -270,32 +163,22 @@ class Retry
         return $result;
     }
 
-    /**
-     * Sets the decider callback
-     * @param callable $callback
-     * @return $this
-     */
+    public function decider(): callable{
+        return $this->decider ?? $this->getDefaultDecider();
+    }
+
     public function setDecider(callable $callback): self
     {
         $this->decider = $callback;
         return $this;
     }
 
-    /**
-     * Sets the error handler callback
-     * @param callable $callback
-     * @return $this
-     */
     public function setErrorHandler(callable $callback): self
     {
         $this->errorHandler = $callback;
         return $this;
     }
 
-    /**
-     * Gets a default decider that simply check exceptions and maxattempts
-     * @return \Closure
-     */
     protected function getDefaultDecider()
     {
         return function ($retry, $maxAttempts, $result = null, $exception = null) {
@@ -307,9 +190,6 @@ class Retry
         };
     }
 
-    /**
-     * @param int $attempt
-     */
     public function wait($attempt): void 
     {
         if ($attempt == 0) {
@@ -319,11 +199,6 @@ class Retry
         usleep($this->getWaitTime($attempt) * 1000);
     }
 
-    /**
-     * @param int $attempt
-     *
-     * @return int
-     */
     public function getWaitTime($attempt): int
     {
         $waitTime = call_user_func($this->getStrategy(), $attempt);
@@ -331,11 +206,6 @@ class Retry
         return $this->jitter($this->cap($waitTime));
     }
 
-    /**
-     * @param int $waitTime
-     *
-     * @return mixed
-     */
     protected function cap(int $waitTime): int
     {
         return is_int($this->getWaitCap())
@@ -343,11 +213,6 @@ class Retry
             : $waitTime;
     }
 
-    /**
-     * @param int $waitTime
-     *
-     * @return int
-     */
     protected function jitter(int $waitTime): int
     {
         return $this->jitterEnabled()
