@@ -9,7 +9,7 @@ class ConstantStrategyTest extends TestCase
     {
         $s = new ConstantStrategy();
 
-        $this->assertEquals(100, $s->getBase());
+        $this->assertEquals(100, $s->base());
     }
 
     public function testWaitTimes()

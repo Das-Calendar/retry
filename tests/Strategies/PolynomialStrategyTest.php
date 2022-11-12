@@ -9,8 +9,8 @@ class PolynomialStrategyTest extends TestCase
     {
         $s = new PolynomialStrategy();
 
-        $this->assertEquals(100, $s->getBase());
-        $this->assertEquals(2, $s->getDegree());
+        $this->assertEquals(100, $s->base());
+        $this->assertEquals(2, $s->degree);
     }
 
     public function testWaitTimes()

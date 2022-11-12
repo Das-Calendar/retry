@@ -9,7 +9,7 @@ class ExponentialStrategyTest extends TestCase
     {
         $s = new ExponentialStrategy();
 
-        $this->assertEquals(100, $s->getBase());
+        $this->assertEquals(100, $s->base());
     }
 
     public function testWaitTimes()

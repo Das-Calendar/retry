@@ -9,7 +9,7 @@ class LinearStrategyTest extends TestCase
     {
         $s = new LinearStrategy();
 
-        $this->assertEquals(100, $s->getBase());
+        $this->assertEquals(100, $s->base());
     }
 
     public function testWaitTimes()
