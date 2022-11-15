@@ -153,7 +153,7 @@ class Retry
                 $this->exceptions[] = $e;
                 $exception = $e;
             }
-            $try = call_user_func($this->decider(), ++$attempt, $this->getMaxAttempts(), $result, $exception);
+            $exception = call_user_func($this->decider(), ++$attempt, $this->getMaxAttempts(), $result, $exception);
 
             if($try && isset($this->errorHandler)) {
                 call_user_func($this->errorHandler, $exception, $attempt, $this->getMaxAttempts());
@@ -183,7 +183,7 @@ class Retry
     {
         return function ($retry, $maxAttempts, $result = null, $exception = null) {
             if($retry >= $maxAttempts && ! is_null($exception)) {
-                throw $exception;
+                return false;
             }
 
             return $retry < $maxAttempts && !is_null($exception);
