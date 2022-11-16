@@ -155,7 +155,7 @@ class Retry
             }
             $try = call_user_func($this->decider(), ++$attempt, $this->getMaxAttempts(), $result, $exception);
 
-            if($try && isset($this->errorHandler)) {
+            if($exception && isset($this->errorHandler)) {
                 call_user_func($this->errorHandler, $exception, $attempt, $this->getMaxAttempts());
             }
         }
